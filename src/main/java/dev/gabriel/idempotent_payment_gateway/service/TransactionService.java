@@ -13,6 +13,10 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+/**
+ * service responsible for processing financial transactions.
+ * manages account balances, transaction history, and ensures data consistency using pessimistic locks.
+ */
 @Service
 @RequiredArgsConstructor
 public class TransactionService {
@@ -21,16 +25,30 @@ public class TransactionService {
     private final BankTransactionRepository transactionRepository;
     private final BankEntryRepository entryRepository;
 
+    /**
+     * processes a transaction (debit or credit) for a specific account.
+     * <p>
+     * this method performs the following steps atomically:
+     * 1. locks the account record in the database (pessimistic write) to prevent race conditions.
+     * 2. validates the transaction type and checks for sufficient funds (if debit).
+     * 3. updates the account balance.
+     * 4. creates and persists a transaction header record.
+     * 5. creates and persists a ledger entry record linked to the transaction and account.
+     *
+     * @param request the transaction request containing account id, amount, and type.
+     * @return a {@link TransactionResponseDto} with the transaction status and new balance.
+     * @throws IllegalArgumentException if the account is not found or transaction type is invalid.
+     */
     @Transactional // either completes fully or rolls back
     public TransactionResponseDto processTransaction(TransactionRequestDto request) {
         // search for account, locking it for update
         BankAccount account = accountRepository
                 .findByIdWithLock(request.accountId())
-                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+                .orElseThrow(() -> new IllegalArgumentException("account not found"));
 
         EntryType type = EntryType.valueOf(request.type().toUpperCase());
 
-        // determine transaction type
+        // determine transaction type and update balance
         switch (type) {
             case DEBIT -> {
                 // check for sufficient funds
@@ -39,7 +57,7 @@ public class TransactionService {
                             null,
                             "FAILED",
                             account.getBalance(),
-                            "Insufficient funds"
+                            "insufficient funds"
                     );
                 }
                 // perform debit
@@ -49,17 +67,22 @@ public class TransactionService {
                 // perform credit
                 account.setBalance(account.getBalance().add(request.amount()));
             }
-            default -> throw new IllegalArgumentException("Invalid transaction type");
+            default -> throw new IllegalArgumentException("invalid transaction type");
         }
 
         // create transaction record
         BankTransaction transaction = BankTransaction.builder()
-                .description("Transaction for account " + account.getId())
+                .description("transaction for account " + account.getId())
                 .amount(request.amount())
                 .build();
 
-        accountRepository.save(account); // persist updated balance
+        // save the transaction header first to generate the id
+        transactionRepository.save(transaction);
 
+        // persist updated balance
+        accountRepository.save(account);
+
+        // create the ledger entry linked to the saved transaction
         BankEntry entry = BankEntry.builder()
                 .account(account)
                 .transaction(transaction)
@@ -67,14 +90,14 @@ public class TransactionService {
                 .type(type)
                 .build();
 
+        // save the entry
         entryRepository.save(entry);
 
         return new TransactionResponseDto(
-                account.getId(),
+                transaction.getId(),
                 "COMPLETED",
                 account.getBalance(),
                 null
         );
     }
-
 }
