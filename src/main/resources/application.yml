@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: idempotent-payment-gateway
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres_db
+    username: admin
+    password: password
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true # see lock actually working
+    hibernate:
+      ddl-auto: validate # flyway auto-create the schema
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
