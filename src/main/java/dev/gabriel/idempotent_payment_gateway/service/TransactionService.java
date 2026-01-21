@@ -1,5 +1,6 @@
 package dev.gabriel.idempotent_payment_gateway.service;
 
+import dev.gabriel.idempotent_payment_gateway.model.dtos.AccountBalanceDto;
 import dev.gabriel.idempotent_payment_gateway.model.dtos.TransactionRequestDto;
 import dev.gabriel.idempotent_payment_gateway.model.dtos.TransactionResponseDto;
 import dev.gabriel.idempotent_payment_gateway.model.entities.BankAccount;
@@ -12,6 +13,8 @@ import dev.gabriel.idempotent_payment_gateway.repository.BankTransactionReposito
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 /**
  * service responsible for processing financial transactions.
@@ -100,4 +103,5 @@ public class TransactionService {
                 null
         );
     }
+
 }

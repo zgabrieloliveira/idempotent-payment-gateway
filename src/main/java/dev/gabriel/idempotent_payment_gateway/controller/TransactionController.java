@@ -1,7 +1,9 @@
 package dev.gabriel.idempotent_payment_gateway.controller;
 
+import dev.gabriel.idempotent_payment_gateway.model.dtos.AccountBalanceDto;
 import dev.gabriel.idempotent_payment_gateway.model.dtos.TransactionRequestDto;
 import dev.gabriel.idempotent_payment_gateway.model.dtos.TransactionResponseDto;
+import dev.gabriel.idempotent_payment_gateway.service.AccountService;
 import dev.gabriel.idempotent_payment_gateway.service.IdempotencyService;
 import dev.gabriel.idempotent_payment_gateway.service.TransactionService;
 import jakarta.validation.Valid;
